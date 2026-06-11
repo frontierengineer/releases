@@ -1,10 +1,10 @@
 {
   "channel": "nightly",
   "version": "0.1.0-nightly.20260611",
-  "gitSha": "385fcf99cc9d",
-  "imageDigest": "sha256:e3867815c5abbca795263660c93f8b39818ac2229e49e21cf12ab5bdc331cb3a",
-  "image": "ghcr.io/frontierengineer/frontier@sha256:e3867815c5abbca795263660c93f8b39818ac2229e49e21cf12ab5bdc331cb3a",
-  "releasedAt": "2026-06-11T05:00:53Z",
+  "gitSha": "1edd5f34c10e",
+  "imageDigest": "sha256:af1ed53913b14434fa1be9682efdeeab0eca93b519d28592d89d37707b40487e",
+  "image": "ghcr.io/frontierengineer/frontier@sha256:af1ed53913b14434fa1be9682efdeeab0eca93b519d28592d89d37707b40487e",
+  "releasedAt": "2026-06-11T05:20:00Z",
   "notesUrl": "https://frontierengineer.github.io/releases/notes/0.1.0-nightly.20260611.md",
   "minSupportedVersion": "0.0.0",
   "critical": false

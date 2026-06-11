@@ -1,0 +1,46 @@
+# Frontier — official Docker Compose install.
+#
+#   curl -fsSL https://frontierengineer.github.io/releases/install/docker-compose.yml -o docker-compose.yml
+#   docker compose up -d
+#   open http://localhost:54668
+#
+# First run: agents execute through the Claude CLI inside the container —
+# authenticate it once (stored durably in the frontier-root volume):
+#   docker compose exec -it frontier claude
+# …and follow the login flow, or set ANTHROPIC_API_KEY in `environment`.
+#
+# Updating (the in-app notice tells you when a new build is published):
+#   docker compose pull && docker compose up -d
+#
+# Channels: stable (default) | rc (early access) | nightly (head, may break).
+# Keep the image tag and FRONTIER_CHANNEL in step.
+
+services:
+  frontier:
+    image: ghcr.io/frontierengineer/frontier:stable
+    container_name: frontier
+    restart: unless-stopped
+    ports:
+      - "54668:80" # the UI
+      # - "27520:27520" # worker port — only needed to connect additional machines
+    environment:
+      FRONTIER_DIR: /data/frontier
+      FRONTIER_CHANNEL: stable
+      # Voice (STT/TTS) runs on CPU out of the box. With a GPU, uncomment
+      # `gpus` below and pick a bigger transcription model:
+      # STT_MODEL: small.en
+    # gpus: all
+    volumes:
+      # Install state: spaces, sessions, machines, extensions, config.
+      # Without this mount Frontier boots in ephemeral DEMO mode.
+      - frontier-data:/data/frontier
+      # Home: Claude auth, ssh keys, caches — shared by the server and its
+      # local worker.
+      - frontier-root:/root
+      # The code you want Frontier to work on. Mount anything you like and
+      # register it as a work area inside the app.
+      - ~/code:/workspace/code
+
+volumes:
+  frontier-data:
+  frontier-root:

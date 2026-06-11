@@ -1,0 +1,91 @@
+# Frontier — minimal Kubernetes install (a starting point, not a prescription).
+#
+#   kubectl apply -f https://frontierengineer.github.io/releases/install/kubernetes.yaml
+#   kubectl port-forward -n frontier svc/frontier 54668:80
+#
+# Adapt storage (PVC sizes / storageClass), expose the Service however your
+# cluster does ingress, and mount the code you want Frontier to work on into
+# the pod. Updates: roll the deployment to the sha published in your
+# channel's manifest (https://frontierengineer.github.io/releases/channels/).
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: frontier
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: frontier-data
+  namespace: frontier
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: frontier-root
+  namespace: frontier
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontier
+  namespace: frontier
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+    - port: 27520
+      targetPort: 27520
+      name: worker
+  selector:
+    app: frontier
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontier
+  namespace: frontier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontier
+  template:
+    metadata:
+      labels:
+        app: frontier
+    spec:
+      containers:
+        - name: frontier
+          image: ghcr.io/frontierengineer/frontier:stable
+          ports:
+            - containerPort: 80
+            - containerPort: 27520
+          env:
+            - name: FRONTIER_DIR
+              value: /data/frontier
+            - name: FRONTIER_CHANNEL
+              value: stable
+          volumeMounts:
+            - name: data
+              mountPath: /data/frontier
+            - name: root
+              mountPath: /root
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: frontier-data
+        - name: root
+          persistentVolumeClaim:
+            claimName: frontier-root

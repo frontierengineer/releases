@@ -1,0 +1,11 @@
+{
+  "channel": "nightly",
+  "version": "0.1.0-nightly.20260611",
+  "gitSha": "385fcf99cc9d",
+  "imageDigest": "sha256:e3867815c5abbca795263660c93f8b39818ac2229e49e21cf12ab5bdc331cb3a",
+  "image": "ghcr.io/frontierengineer/frontier@sha256:e3867815c5abbca795263660c93f8b39818ac2229e49e21cf12ab5bdc331cb3a",
+  "releasedAt": "2026-06-11T05:00:53Z",
+  "notesUrl": "https://frontierengineer.github.io/releases/notes/0.1.0-nightly.20260611.md",
+  "minSupportedVersion": "0.0.0",
+  "critical": false
+}

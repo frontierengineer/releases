@@ -2,7 +2,7 @@
 #
 #   curl -fsSL https://frontierengineer.github.io/releases/install/docker-compose.yml -o docker-compose.yml
 #   docker compose up -d
-#   open http://localhost:54668
+#   open http://localhost:61815
 #
 # First run: agents execute through the Claude CLI inside the container —
 # authenticate it once (stored durably in the frontier-root volume):
@@ -21,7 +21,7 @@ services:
     container_name: frontier
     restart: unless-stopped
     ports:
-      - "54668:80" # the UI
+      - "61815:80" # the UI
       # - "27520:27520" # worker port — only needed to connect additional machines
     environment:
       FRONTIER_DIR: /data/frontier

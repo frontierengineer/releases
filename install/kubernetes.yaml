@@ -1,7 +1,7 @@
 # Frontier — minimal Kubernetes install (a starting point, not a prescription).
 #
 #   kubectl apply -f https://frontierengineer.github.io/releases/install/kubernetes.yaml
-#   kubectl port-forward -n frontier svc/frontier 54668:80
+#   kubectl port-forward -n frontier svc/frontier 61815:80
 #
 # Adapt storage (PVC sizes / storageClass), expose the Service however your
 # cluster does ingress, and mount the code you want Frontier to work on into

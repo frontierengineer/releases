@@ -2,12 +2,12 @@
 #
 #   curl -fsSL https://frontierengineer.github.io/releases/install/docker-compose.yml -o docker-compose.yml
 #   docker compose up -d
-#   open http://localhost:61815
+#   open http://localhost:34567
 #
-# Edit the `/path/to/…` and `~/…` mounts below before the first run.
+# Edit the `/path/to/frontier` and `~/…` mounts below before the first run.
 #
 # First run: agents execute through the Claude CLI inside the container —
-# authenticate it once (stored in the mounted home directory):
+# authenticate it once (stored under the mounted /frontier directory):
 #   docker compose exec -it frontier claude
 # …and follow the login flow.
 #
@@ -23,22 +23,19 @@ services:
     container_name: frontier
     restart: unless-stopped
     ports:
-      - "61815:80" # the UI
+      - "34567:80" # the UI
       # - "27520:27520" # worker port — only needed to connect additional machines
     environment:
-      FRONTIER_DIR: /data/frontier
       FRONTIER_CHANNEL: stable
     # Optional: NVIDIA GPU acceleration for voice and transcription.
     # Everything runs on CPU without it.
     # gpus: all
     volumes:
-      # Replace /path/to/frontier-data with the directory where you want all
-      # of Frontier's data to live. Without this mount, Frontier boots in
-      # ephemeral demo mode.
-      - /path/to/frontier-data:/data/frontier
-      # Replace /path/to/frontier-home with a directory for the container's
-      # home — keeping it means logins and caches survive recreations.
-      - /path/to/frontier-home:/root
+      # Replace /path/to/frontier with the directory where Frontier should keep
+      # everything — its data and the agent's home (logins, caches) both live
+      # under here, so it's the one directory to back up. Without this mount,
+      # Frontier boots in ephemeral demo mode.
+      - /path/to/frontier:/frontier
       # Makes your local directories available to work on in Frontier —
       # mount as many as you like; each shows up as a place to create
       # workspaces.

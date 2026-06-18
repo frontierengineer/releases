@@ -18,10 +18,31 @@ if (typeof globalThis.fetch !== 'function') {
 }
 
 "use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 
 // node_modules/ws/lib/constants.js
 var require_constants = __commonJS({
@@ -790,6 +811,10 @@ var require_receiver = __commonJS({
        *     extensions
        * @param {Boolean} [options.isServer=false] Specifies whether to operate in
        *     client or server mode
+       * @param {Number} [options.maxBufferedChunks=0] The maximum number of
+       *     buffered data chunks
+       * @param {Number} [options.maxFragments=0] The maximum number of message
+       *     fragments
        * @param {Number} [options.maxPayload=0] The maximum allowed message length
        * @param {Boolean} [options.skipUTF8Validation=false] Specifies whether or
        *     not to skip UTF-8 validation for text and close messages
@@ -800,6 +825,8 @@ var require_receiver = __commonJS({
         this._binaryType = options.binaryType || BINARY_TYPES[0];
         this._extensions = options.extensions || {};
         this._isServer = !!options.isServer;
+        this._maxBufferedChunks = options.maxBufferedChunks | 0;
+        this._maxFragments = options.maxFragments | 0;
         this._maxPayload = options.maxPayload | 0;
         this._skipUTF8Validation = !!options.skipUTF8Validation;
         this[kWebSocket] = void 0;
@@ -829,6 +856,18 @@ var require_receiver = __commonJS({
        */
       _write(chunk, encoding, cb) {
         if (this._opcode === 8 && this._state == GET_INFO) return cb();
+        if (this._maxBufferedChunks > 0 && this._buffers.length >= this._maxBufferedChunks) {
+          cb(
+            this.createError(
+              RangeError,
+              "Too many buffered chunks",
+              false,
+              1008,
+              "WS_ERR_TOO_MANY_BUFFERED_PARTS"
+            )
+          );
+          return;
+        }
         this._bufferedBytes += chunk.length;
         this._buffers.push(chunk);
         this.startLoop(cb);
@@ -1158,6 +1197,17 @@ var require_receiver = __commonJS({
           return;
         }
         if (data.length) {
+          if (this._maxFragments > 0 && this._fragments.length >= this._maxFragments) {
+            const error = this.createError(
+              RangeError,
+              "Too many message fragments",
+              false,
+              1008,
+              "WS_ERR_TOO_MANY_BUFFERED_PARTS"
+            );
+            cb(error);
+            return;
+          }
           this._messageLength = this._totalPayloadLength;
           this._fragments.push(data);
         }
@@ -1183,6 +1233,17 @@ var require_receiver = __commonJS({
                 false,
                 1009,
                 "WS_ERR_UNSUPPORTED_MESSAGE_LENGTH"
+              );
+              cb(error);
+              return;
+            }
+            if (this._maxFragments > 0 && this._fragments.length >= this._maxFragments) {
+              const error = this.createError(
+                RangeError,
+                "Too many message fragments",
+                false,
+                1008,
+                "WS_ERR_TOO_MANY_BUFFERED_PARTS"
               );
               cb(error);
               return;
@@ -1353,6 +1414,9 @@ var require_sender = __commonJS({
     "use strict";
     var { Duplex } = require("stream");
     var { randomFillSync } = require("crypto");
+    var {
+      types: { isUint8Array }
+    } = require("util");
     var PerMessageDeflate = require_permessage_deflate();
     var { EMPTY_BUFFER, kWebSocket, NOOP } = require_constants();
     var { isBlob, isValidStatusCode } = require_validation();
@@ -1506,8 +1570,10 @@ var require_sender = __commonJS({
           buf.writeUInt16BE(code, 0);
           if (typeof data === "string") {
             buf.write(data, 2);
-          } else {
+          } else if (isUint8Array(data)) {
             buf.set(data, 2);
+          } else {
+            throw new TypeError("Second argument must be a string or a Uint8Array");
           }
         }
         const options = {
@@ -2388,6 +2454,10 @@ var require_websocket = __commonJS({
        *     multiple times in the same tick
        * @param {Function} [options.generateMask] The function used to generate the
        *     masking key
+       * @param {Number} [options.maxBufferedChunks=0] The maximum number of
+       *     buffered data chunks
+       * @param {Number} [options.maxFragments=0] The maximum number of message
+       *     fragments
        * @param {Number} [options.maxPayload=0] The maximum allowed message size
        * @param {Boolean} [options.skipUTF8Validation=false] Specifies whether or
        *     not to skip UTF-8 validation for text and close messages
@@ -2399,6 +2469,8 @@ var require_websocket = __commonJS({
           binaryType: this.binaryType,
           extensions: this._extensions,
           isServer: this._isServer,
+          maxBufferedChunks: options.maxBufferedChunks,
+          maxFragments: options.maxFragments,
           maxPayload: options.maxPayload,
           skipUTF8Validation: options.skipUTF8Validation
         });
@@ -2698,6 +2770,8 @@ var require_websocket = __commonJS({
         autoPong: true,
         closeTimeout: CLOSE_TIMEOUT,
         protocolVersion: protocolVersions[1],
+        maxBufferedChunks: 1024 * 1024,
+        maxFragments: 128 * 1024,
         maxPayload: 100 * 1024 * 1024,
         skipUTF8Validation: false,
         perMessageDeflate: true,
@@ -2940,6 +3014,8 @@ var require_websocket = __commonJS({
         websocket.setSocket(socket, head, {
           allowSynchronousEvents: opts.allowSynchronousEvents,
           generateMask: opts.generateMask,
+          maxBufferedChunks: opts.maxBufferedChunks,
+          maxFragments: opts.maxFragments,
           maxPayload: opts.maxPayload,
           skipUTF8Validation: opts.skipUTF8Validation
         });
@@ -3282,6 +3358,10 @@ var require_websocket_server = __commonJS({
        *     called
        * @param {Function} [options.handleProtocols] A hook to handle protocols
        * @param {String} [options.host] The hostname where to bind the server
+       * @param {Number} [options.maxBufferedChunks=1048576] The maximum number of
+       *     buffered data chunks
+       * @param {Number} [options.maxFragments=131072] The maximum number of message
+       *     fragments
        * @param {Number} [options.maxPayload=104857600] The maximum allowed message
        *     size
        * @param {Boolean} [options.noServer=false] Enable no server mode
@@ -3303,6 +3383,8 @@ var require_websocket_server = __commonJS({
         options = {
           allowSynchronousEvents: true,
           autoPong: true,
+          maxBufferedChunks: 1024 * 1024,
+          maxFragments: 128 * 1024,
           maxPayload: 100 * 1024 * 1024,
           skipUTF8Validation: false,
           perMessageDeflate: false,
@@ -3582,6 +3664,8 @@ var require_websocket_server = __commonJS({
         socket.removeListener("error", socketOnError);
         ws2.setSocket(socket, head, {
           allowSynchronousEvents: this.options.allowSynchronousEvents,
+          maxBufferedChunks: this.options.maxBufferedChunks,
+          maxFragments: this.options.maxFragments,
           maxPayload: this.options.maxPayload,
           skipUTF8Validation: this.options.skipUTF8Validation
         });
@@ -3664,9 +3748,9 @@ var require_ws = __commonJS({
   }
 });
 
-// machine/workerCrypto.js
+// workerCrypto.js
 var require_workerCrypto = __commonJS({
-  "machine/workerCrypto.js"(exports2, module2) {
+  "workerCrypto.js"(exports2, module2) {
     "use strict";
     var crypto2 = require("crypto");
     var X25519_SPKI_PREFIX = Buffer.from("302a300506032b656e032100", "hex");
@@ -3791,9 +3875,9 @@ var require_workerCrypto = __commonJS({
   }
 });
 
-// machine/worker/extensionLoader.js
+// worker/extensionLoader.js
 var require_extensionLoader = __commonJS({
-  "machine/worker/extensionLoader.js"(exports2, module2) {
+  "worker/extensionLoader.js"(exports2, module2) {
     "use strict";
     var fs2 = require("fs");
     var os2 = require("os");
@@ -3838,8 +3922,8 @@ var require_extensionLoader = __commonJS({
         id: extensionId,
         channel: {
           send(payload) {
-            const ok = deps.send({ type: "ext.msg", extension: extensionId, machine: deps.machine, payload });
-            if (!ok) console.error(`[extension-loader] ${extensionId}: ext.msg dropped (link down)`);
+            const ok = deps.send({ type: "extension.msg", extension: extensionId, machine: deps.machine, payload });
+            if (!ok) console.error(`[extension-loader] ${extensionId}: extension.msg dropped (link down)`);
           },
           onMessage(handler) {
             record.handlers.add(handler);
@@ -3852,11 +3936,10 @@ var require_extensionLoader = __commonJS({
           importWorker,
           requireWorker,
           hostUrl: deps.baseUrl,
-          // Fetch a worker-plane asset (e.g. a node-pty prebuilt tarball) the
-          // transport-correct way: over the control WS on a paired/relayed
-          // connection (returns a Buffer), or null when the component should use
-          // plain HTTP against hostUrl (direct/legacy). `workerPath` is under
-          // /worker, e.g. `/daemon-deps/node-pty/<key>`.
+          // Fetch a worker-plane asset the transport-correct way: over the control
+          // WS on a paired/relayed connection (returns a Buffer), or null when the
+          // component should use plain HTTP against hostUrl (direct/legacy).
+          // `workerPath` is a path under /worker.
           fetchAsset: deps.fetchAsset || null
         },
         deregister() {
@@ -3961,7 +4044,7 @@ var require_extensionLoader = __commonJS({
     function dispatchWorkerMessage(extensionId, payload) {
       const record = components.get(extensionId);
       if (!record || record.handlers.size === 0) {
-        console.log(`[extension-loader] ext.msg for unloaded component "${extensionId}" dropped`);
+        console.log(`[extension-loader] extension.msg for unloaded component "${extensionId}" dropped`);
         return;
       }
       for (const handler of Array.from(record.handlers)) {
@@ -3982,7 +4065,7 @@ var require_extensionLoader = __commonJS({
   }
 });
 
-// machine/daemon.js
+// daemon.js
 var WebSocket = require_ws();
 var path = require("path");
 var fs = require("fs");
@@ -4003,9 +4086,9 @@ var PAIRED = false;
 var HOST_STATIC_PUB = null;
 var DAEMON_REACH_ID = null;
 var cryptoSession = null;
-var DEFAULT_LINK_URL = "https://frontier-link-1036424375796.us-central1.run.app";
+var DEFAULT_LINK_URL = "https://link.frontierengineer.com";
 var FRONTIER_LINK_URL = process.env.FRONTIER_LINK_URL || DEFAULT_LINK_URL;
-var SERVER_HOST = process.env.FRONTIER_SERVER_HOST || "localhost:61815";
+var SERVER_HOST = process.env.FRONTIER_SERVER_HOST || "localhost:34567";
 var EXPLICIT_HOST = null;
 var PID_FILE = null;
 function claimPidLock() {
@@ -4069,12 +4152,48 @@ process.on("SIGINT", () => {
 });
 var extensionLoader = require_extensionLoader();
 var runtimesLoaded = false;
+var NODE_PTY_SPEC = "node-pty@^1.0.0";
+async function ensureNodePty() {
+  try {
+    require.resolve("node-pty");
+    return;
+  } catch {
+  }
+  const { spawn } = require("child_process");
+  console.log(`[daemon] node-pty not present \u2014 installing ${NODE_PTY_SPEC} into ${__dirname} (first boot)`);
+  await new Promise((resolve) => {
+    var _a, _b;
+    let child;
+    try {
+      child = spawn("npm", ["install", "--no-audit", "--no-fund", "--no-save", NODE_PTY_SPEC], {
+        cwd: __dirname,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env }
+      });
+    } catch (err) {
+      console.error(`[daemon] node-pty install could not start (npm missing?): ${err && err.message || err}`);
+      return resolve();
+    }
+    (_a = child.stdout) == null ? void 0 : _a.on("data", (c) => console.log(`[npm-install] ${String(c).trim()}`));
+    (_b = child.stderr) == null ? void 0 : _b.on("data", (c) => console.error(`[npm-install] ${String(c).trim()}`));
+    child.on("error", (err) => {
+      console.error(`[daemon] node-pty install failed to spawn: ${err && err.message || err}`);
+      resolve();
+    });
+    child.on("exit", (code) => {
+      if (code === 0) console.log("[daemon] node-pty installed");
+      else console.error(`[daemon] node-pty install exited ${code} \u2014 terminals may be unavailable on this worker`);
+      resolve();
+    });
+  });
+}
 var ws = null;
 var reconnectDelay = 1e3;
 var DAEMON_START_TS = (/* @__PURE__ */ new Date()).toISOString();
 var inflight = /* @__PURE__ */ new Map();
-function trackInflight(executionId, ac, meta) {
-  inflight.set(executionId, { ac, meta: meta || {} });
+var NEVER_ABORT_SIGNAL = new AbortController().signal;
+function trackInflight(executionId, meta) {
+  inflight.set(executionId, { meta: meta || {} });
 }
 function inflightMetaFromMsg(msg) {
   return {
@@ -4098,58 +4217,6 @@ function frameToBuf(data) {
 function decodeFrame(data) {
   if (cryptoSession) return cryptoSession.openText(frameToBuf(data));
   return JSON.parse(data.toString());
-}
-async function sweepDescendantProcesses() {
-  if (process.platform !== "linux") return;
-  const myPid = process.pid;
-  let pids;
-  try {
-    pids = await fsp.readdir("/proc");
-  } catch {
-    return;
-  }
-  const parents = /* @__PURE__ */ new Map();
-  await Promise.all(pids.map(async (entry) => {
-    const pid = parseInt(entry, 10);
-    if (!pid || pid === myPid) return;
-    try {
-      const status = await fsp.readFile(`/proc/${entry}/status`, "utf-8");
-      const m = /^PPid:\s+(\d+)/m.exec(status);
-      if (m) parents.set(pid, parseInt(m[1], 10));
-    } catch {
-    }
-  }));
-  const isDescendant = (pid) => {
-    let cur = parents.get(pid);
-    while (cur && cur !== 1) {
-      if (cur === myPid) return true;
-      cur = parents.get(cur);
-    }
-    return false;
-  };
-  const targets = [];
-  for (const pid of parents.keys()) if (isDescendant(pid)) targets.push(pid);
-  if (!targets.length) return;
-  console.log(`[daemon] sweeping ${targets.length} descendant process(es): ${targets.join(", ")}`);
-  for (const pid of targets) {
-    try {
-      process.kill(pid, "SIGTERM");
-    } catch {
-    }
-  }
-  setTimeout(() => {
-    for (const pid of targets) {
-      try {
-        process.kill(pid, 0);
-      } catch {
-        continue;
-      }
-      try {
-        process.kill(pid, "SIGKILL");
-      } catch {
-      }
-    }
-  }, 3e3);
 }
 function onConnectionReady() {
   console.log(`[daemon] connected as ${MACHINE_UUID}${cryptoSession ? " (encrypted)" : ""}`);
@@ -4405,6 +4472,108 @@ async function dialForPairing(code) {
   const { sock } = await dialViaCandidatesOrRelay({ code }, EXPLICIT_HOST);
   return sock;
 }
+var gpuStats = null;
+var gpuProbeInFlight = false;
+var gpuProbed = false;
+function refreshGpuStats() {
+  if (gpuProbeInFlight) return;
+  gpuProbeInFlight = true;
+  let execFile;
+  try {
+    ({ execFile } = require("child_process"));
+  } catch {
+    gpuProbeInFlight = false;
+    gpuProbed = true;
+    return;
+  }
+  try {
+    execFile(
+      "nvidia-smi",
+      ["--query-gpu=utilization.gpu,memory.used,memory.total,count", "--format=csv,noheader,nounits"],
+      { timeout: 4e3, windowsHide: true, env: { ...process.env, LANG: "C", LC_ALL: "C" } },
+      (err, stdout) => {
+        gpuProbeInFlight = false;
+        gpuProbed = true;
+        if (err) {
+          gpuStats = null;
+          return;
+        }
+        gpuStats = parseNvidiaSmi(stdout);
+      }
+    );
+  } catch {
+    gpuProbeInFlight = false;
+    gpuProbed = true;
+    gpuStats = null;
+  }
+}
+function parseNvidiaSmi(stdout) {
+  const line = String(stdout || "").split("\n").map((l) => l.trim()).filter(Boolean)[0];
+  if (!line) return null;
+  const cells = line.split(",").map((c) => c.trim());
+  const num = (c) => {
+    if (c == null) return void 0;
+    const n = Number(c);
+    return Number.isFinite(n) ? n : void 0;
+  };
+  const load = num(cells[0]);
+  const memUsedMiB = num(cells[1]);
+  const memTotalMiB = num(cells[2]);
+  const cores = num(cells[3]);
+  const out = {};
+  if (load !== void 0) out.load = load;
+  if (cores !== void 0) out.cores = cores;
+  if (memUsedMiB !== void 0) out.memUsed = memUsedMiB * 1024 * 1024;
+  if (memTotalMiB !== void 0) out.memTotal = memTotalMiB * 1024 * 1024;
+  return Object.keys(out).length ? out : null;
+}
+function collectStats() {
+  try {
+    const load = os.loadavg();
+    const total = os.totalmem();
+    const free = os.freemem();
+    const stats = {
+      cpuLoad: typeof load[0] === "number" ? load[0] : void 0,
+      cpuCores: os.cpus().length,
+      memUsed: typeof total === "number" && typeof free === "number" ? total - free : void 0,
+      memTotal: total
+    };
+    if (gpuProbed && gpuStats) stats.gpu = gpuStats;
+    return stats;
+  } catch {
+    return void 0;
+  }
+}
+var runtimeAuthCache = null;
+var runtimeAuthProbing = false;
+async function refreshRuntimeAuth() {
+  if (runtimeAuthProbing) return;
+  runtimeAuthProbing = true;
+  try {
+    const out = [];
+    for (const [id, impl] of extensionLoader.runtimes.entries()) {
+      const label = impl && impl.label || id;
+      if (!impl || typeof impl.auth !== "function") {
+        out.push({ id, label, auth: "unknown" });
+        continue;
+      }
+      try {
+        const probe = await Promise.race([
+          impl.auth(),
+          new Promise((resolve) => setTimeout(() => resolve({ auth: "unknown", detail: "probe timed out" }), 5e3))
+        ]);
+        const auth = probe && ["ok", "logged_out", "error", "unknown"].includes(probe.auth) ? probe.auth : "unknown";
+        out.push({ id, label, auth, ...probe && probe.detail ? { detail: String(probe.detail) } : {} });
+      } catch (err) {
+        out.push({ id, label, auth: "unknown", detail: err && err.message || "probe failed" });
+      }
+    }
+    runtimeAuthCache = out;
+  } catch {
+  } finally {
+    runtimeAuthProbing = false;
+  }
+}
 function sendHeartbeat() {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
   if (PAIRED && !cryptoSession) return;
@@ -4412,6 +4581,8 @@ function sendHeartbeat() {
   for (const [executionId, entry] of inflight.entries()) {
     inflightArr.push({ executionId, ...entry.meta || {} });
   }
+  refreshGpuStats();
+  void refreshRuntimeAuth();
   send({
     type: "heartbeat",
     machine: MACHINE_UUID,
@@ -4421,7 +4592,14 @@ function sendHeartbeat() {
     token: MACHINE_TOKEN || void 0,
     inflight: inflightArr,
     sourceHash: SOURCE_HASH,
-    daemonStartTs: DAEMON_START_TS
+    daemonStartTs: DAEMON_START_TS,
+    // Host-resource diagnostics for the stats view (cpu load/cores, memory, and
+    // gpu when detectable). See collectStats / MachineStatus.stats.
+    stats: collectStats(),
+    // Per-runtime auth state (Claude/OpenCode login) for the Machines view.
+    // undefined until the first probe completes — see refreshRuntimeAuth /
+    // MachineStatus.runtimes.
+    runtimes: runtimeAuthCache || void 0
   });
 }
 setInterval(sendHeartbeat, 3e4);
@@ -4440,22 +4618,6 @@ function handleMessage(msg) {
         });
       });
       break;
-    case "cancel": {
-      const entry = inflight.get(msg.executionId);
-      if (entry) {
-        try {
-          entry.ac.abort();
-        } catch {
-        }
-        console.log(`[daemon] cancel signalled for ${msg.executionId}`);
-        sweepDescendantProcesses().catch((err) => {
-          console.error(`[daemon] descendant sweep failed: ${err && err.message || err}`);
-        });
-      } else {
-        console.log(`[daemon] cancel for unknown execution ${msg.executionId}`);
-      }
-      break;
-    }
     case "query":
       handleQuery(msg).catch((err) => {
         console.error(`[daemon] query ${msg.queryId} fatal:`, err && err.message || err);
@@ -4466,7 +4628,7 @@ function handleMessage(msg) {
       console.log(`[daemon] update requested \u2014 exiting for restart`);
       process.exit(0);
       break;
-    case "ext.msg":
+    case "extension.msg":
       extensionLoader.dispatchWorkerMessage(msg.extension, msg.payload);
       break;
     case "fetch_result":
@@ -4692,10 +4854,6 @@ async function handleQuery(msg) {
     await handleFsWrite(queryId, params || {});
     return;
   }
-  if (op === "vcs.status" || op === "vcs.branches" || op === "vcs.log" || op === "vcs.commit" || op === "vcs.diff") {
-    await handleVcsOp(op, queryId, params || {});
-    return;
-  }
   if (op === "worker.exec") {
     await handleWorkerExec(queryId, params || {});
     return;
@@ -4703,7 +4861,7 @@ async function handleQuery(msg) {
   send({ type: "query.error", queryId, machine: MACHINE_UUID, error: `unknown op: ${op}` });
 }
 async function handleWorkerExec(queryId, params) {
-  const { workspaceDir, binary, args } = params || {};
+  const { workspaceDir, binary, args, timeoutMs } = params || {};
   if (typeof binary !== "string" || !binary) {
     return sendFsResult(queryId, { ok: false, code: "bad_request", error: "worker.exec: binary required", stdout: "", stderr: "" });
   }
@@ -4712,7 +4870,8 @@ async function handleWorkerExec(queryId, params) {
   if (!ws2.ok) {
     return sendFsResult(queryId, { ok: false, code: "bad_workspace", error: ws2.error, stdout: "", stderr: "" });
   }
-  const r = await runVcs(ws2.cwd, binary, argv);
+  const execOpts = typeof timeoutMs === "number" && timeoutMs > 0 ? { timeout: timeoutMs } : void 0;
+  const r = await execInDir(ws2.cwd, binary, argv, execOpts);
   const stdout = r.stdout ? Buffer.isBuffer(r.stdout) ? r.stdout.toString("utf-8") : String(r.stdout) : "";
   const stderr = r.stderr ? String(r.stderr) : "";
   if (!r.ok) {
@@ -5189,65 +5348,23 @@ async function resolveWorkspacePathForWrite(workspaceDir, relPath) {
   }
   return { ok: true, abs: path.join(parentAbs, base) };
 }
-var VCS_DETECT_TTL_MS = 6e4;
-var VCS_EXEC_TIMEOUT_MS = 1e4;
-var VCS_STATUS_MAX_ENTRIES = 2e3;
-var VCS_STDERR_CAP_BYTES = 4096;
-var vcsDetectCache = /* @__PURE__ */ new Map();
-async function vcsDetect(workspaceDir) {
-  if (!workspaceDir) return { vcs: null, reason: "no_workspace_dir" };
-  const cached = vcsDetectCache.get(workspaceDir);
-  if (cached && Date.now() - cached.ts < VCS_DETECT_TTL_MS) {
-    return {
-      vcs: cached.vcs,
-      reason: cached.vcs ? null : "no_vcs",
-      repoRoot: cached.repoRoot || workspaceDir
-    };
-  }
-  let vcs = null;
-  let repoRoot = null;
-  let cursor = path.resolve(workspaceDir);
-  while (true) {
-    try {
-      await fsp.stat(path.join(cursor, ".git"));
-      vcs = "git";
-      repoRoot = cursor;
-      break;
-    } catch {
-    }
-    try {
-      await fsp.stat(path.join(cursor, ".hg"));
-      vcs = "hg";
-      repoRoot = cursor;
-      break;
-    } catch {
-    }
-    const parent = path.dirname(cursor);
-    if (parent === cursor) break;
-    cursor = parent;
-  }
-  vcsDetectCache.set(workspaceDir, { vcs, repoRoot, ts: Date.now() });
-  return {
-    vcs,
-    reason: vcs ? null : "no_vcs",
-    repoRoot: repoRoot || workspaceDir
-  };
-}
-function runVcs(workspaceDir, binary, args, opts = {}) {
+var EXEC_TIMEOUT_MS = 1e4;
+var EXEC_STDERR_CAP_BYTES = 4096;
+function execInDir(workspaceDir, binary, args, opts = {}) {
   const { execFile } = require("child_process");
   return new Promise((resolve) => {
     execFile(binary, args, {
       cwd: workspaceDir,
-      timeout: opts.timeout || VCS_EXEC_TIMEOUT_MS,
+      timeout: opts.timeout || EXEC_TIMEOUT_MS,
       maxBuffer: opts.maxBuffer || 8 * 1024 * 1024,
       windowsHide: true,
       env: { ...process.env, LANG: "C", LC_ALL: "C" }
     }, (err, stdout, stderr) => {
-      const stderrText = (stderr || "").toString("utf-8").slice(0, VCS_STDERR_CAP_BYTES);
+      const stderrText = (stderr || "").toString("utf-8").slice(0, EXEC_STDERR_CAP_BYTES);
       if (err) {
         return resolve({
           ok: false,
-          code: "vcs_error",
+          code: "exec_error",
           error: stderrText || String(err.message || err),
           exitCode: err.code
         });
@@ -5255,638 +5372,6 @@ function runVcs(workspaceDir, binary, args, opts = {}) {
       resolve({ ok: true, stdout, stderr: stderrText });
     });
   });
-}
-function parseGitStatusZ(stdout) {
-  const text = stdout.toString("utf-8");
-  const parts = text.split("\0");
-  if (parts[parts.length - 1] === "") parts.pop();
-  let branch = null;
-  let detached = false;
-  let upstream = null;
-  let ahead = 0;
-  let behind = 0;
-  const entries = [];
-  let i = 0;
-  if (parts[0] && parts[0].startsWith("##")) {
-    const header = parts[0].slice(2).trim();
-    if (header.startsWith("HEAD (no branch)") || header.startsWith("No commits yet")) {
-      detached = header.startsWith("HEAD");
-      branch = null;
-    } else {
-      const bracketIdx = header.indexOf(" [");
-      const beforeBracket = bracketIdx >= 0 ? header.slice(0, bracketIdx) : header;
-      const dotIdx = beforeBracket.indexOf("...");
-      if (dotIdx >= 0) {
-        branch = beforeBracket.slice(0, dotIdx);
-        upstream = beforeBracket.slice(dotIdx + 3);
-      } else {
-        branch = beforeBracket;
-      }
-      if (bracketIdx >= 0) {
-        const bracket = header.slice(bracketIdx + 2, header.length - 1);
-        const aheadMatch = bracket.match(/ahead (\d+)/);
-        const behindMatch = bracket.match(/behind (\d+)/);
-        if (aheadMatch) ahead = parseInt(aheadMatch[1], 10) || 0;
-        if (behindMatch) behind = parseInt(behindMatch[1], 10) || 0;
-      }
-    }
-    i = 1;
-  }
-  while (i < parts.length && entries.length < VCS_STATUS_MAX_ENTRIES) {
-    const rec = parts[i++];
-    if (!rec || rec.length < 3) continue;
-    const index = rec[0];
-    const worktree = rec[1];
-    const filePath = rec.slice(3);
-    const entry = { path: filePath, index, worktree };
-    if (index === "R" || index === "C" || worktree === "R" || worktree === "C") {
-      const origin = parts[i++];
-      if (origin) entry.rename_from = origin;
-    }
-    entries.push(entry);
-  }
-  const truncated = entries.length >= VCS_STATUS_MAX_ENTRIES;
-  return { branch, detached, upstream, ahead, behind, entries, truncated };
-}
-function parseHgStatus(stdout) {
-  const text = stdout.toString("utf-8");
-  const entries = [];
-  for (const rawLine of text.split("\n")) {
-    if (entries.length >= VCS_STATUS_MAX_ENTRIES) break;
-    if (!rawLine) continue;
-    const letter = rawLine[0];
-    const filePath = rawLine.slice(2);
-    entries.push({ path: filePath, index: " ", worktree: letter });
-  }
-  const truncated = entries.length >= VCS_STATUS_MAX_ENTRIES;
-  return { entries, truncated };
-}
-async function handleVcsStatus(queryId, params) {
-  var _a;
-  let { workspaceDir } = params || {};
-  const detect = await vcsDetect(workspaceDir);
-  if (detect.repoRoot) workspaceDir = detect.repoRoot;
-  if (!detect.vcs) {
-    return sendFsResult(queryId, {
-      ok: false,
-      code: "not_a_repo",
-      error: `${workspaceDir}: not a git or mercurial repository (no .git or .hg at workspace_dir)`
-    });
-  }
-  if (detect.vcs === "git") {
-    const r = await runVcs(workspaceDir, "git", [
-      "status",
-      "--porcelain=v1",
-      "--branch",
-      "-z",
-      ...((_a = params == null ? void 0 : params.opts) == null ? void 0 : _a.include_ignored) ? ["--ignored=traditional"] : [],
-      "--untracked-files=normal"
-    ]);
-    if (!r.ok) return sendFsResult(queryId, r);
-    const parsed2 = parseGitStatusZ(r.stdout);
-    return sendFsResult(queryId, {
-      ok: true,
-      vcs: "git",
-      branch: parsed2.branch,
-      detached: parsed2.detached,
-      upstream: parsed2.upstream,
-      ahead: parsed2.ahead,
-      behind: parsed2.behind,
-      entries: parsed2.entries,
-      clean: parsed2.entries.length === 0,
-      ...parsed2.truncated ? { truncated: true } : {}
-    });
-  }
-  const branchR = await runVcs(workspaceDir, "hg", ["branch"]);
-  if (!branchR.ok) return sendFsResult(queryId, branchR);
-  const branch = branchR.stdout.toString("utf-8").trim() || null;
-  const statusR = await runVcs(workspaceDir, "hg", ["status"]);
-  if (!statusR.ok) return sendFsResult(queryId, statusR);
-  const parsed = parseHgStatus(statusR.stdout);
-  return sendFsResult(queryId, {
-    ok: true,
-    vcs: "hg",
-    branch,
-    detached: false,
-    upstream: null,
-    ahead: 0,
-    behind: 0,
-    entries: parsed.entries,
-    clean: parsed.entries.length === 0,
-    ...parsed.truncated ? { truncated: true } : {}
-  });
-}
-var VCS_BRANCHES_MAX = 1e3;
-var VCS_MAINLINE_NAMES = /* @__PURE__ */ new Set(["main", "master", "trunk", "default"]);
-var VCS_MAINLINE_CANDIDATES = [
-  "refs/heads/main",
-  "refs/heads/master",
-  "refs/heads/trunk",
-  "refs/remotes/origin/main",
-  "refs/remotes/origin/master",
-  "refs/remotes/origin/trunk"
-];
-function isMainlineBranchName(name) {
-  if (!name) return false;
-  if (VCS_MAINLINE_NAMES.has(name)) return true;
-  const lastSeg = name.split("/").pop();
-  return lastSeg ? VCS_MAINLINE_NAMES.has(lastSeg) : false;
-}
-async function getExistingMainlineRefs(workspaceDir) {
-  const r = await runVcs(workspaceDir, "git", [
-    "for-each-ref",
-    "--format=%(refname:short)",
-    ...VCS_MAINLINE_CANDIDATES
-  ]);
-  if (!r.ok) return [];
-  return r.stdout.toString("utf-8").split("\n").map((s) => s.trim()).filter(Boolean);
-}
-async function handleVcsBranches(queryId, params) {
-  let { workspaceDir } = params || {};
-  const opts = (params == null ? void 0 : params.opts) || {};
-  const includeRemote = opts.include_remote === true;
-  const detect = await vcsDetect(workspaceDir);
-  if (detect.repoRoot) workspaceDir = detect.repoRoot;
-  if (!detect.vcs) {
-    return sendFsResult(queryId, { ok: false, code: "not_a_repo", error: "not a repo" });
-  }
-  if (detect.vcs === "git") {
-    const refs = ["refs/heads", ...includeRemote ? ["refs/remotes"] : []];
-    const r2 = await runVcs(workspaceDir, "git", [
-      "for-each-ref",
-      "--format=%(refname:short)%(objectname)%(committerdate:unix)%(contents:subject)%(upstream:short)%(upstream:track)",
-      "--sort=-committerdate",
-      ...refs
-    ]);
-    if (!r2.ok) return sendFsResult(queryId, r2);
-    const headR = await runVcs(workspaceDir, "git", ["symbolic-ref", "--short", "-q", "HEAD"]);
-    const current = headR.ok ? headR.stdout.toString("utf-8").trim() || null : null;
-    const text2 = r2.stdout.toString("utf-8");
-    const records2 = text2.split("\n");
-    while (records2.length && records2[records2.length - 1] === "") records2.pop();
-    const branches2 = [];
-    for (const rec of records2) {
-      if (branches2.length >= VCS_BRANCHES_MAX) break;
-      if (!rec) continue;
-      const parts = rec.split("");
-      if (parts.length < 6) continue;
-      const [name, hash, tsStr, subject, upstream, track] = parts;
-      const isRemote = name.startsWith("origin/") || name.includes("/") && refs.includes("refs/remotes");
-      let ahead = 0, behind = 0;
-      if (track) {
-        const a = track.match(/ahead (\d+)/);
-        const b = track.match(/behind (\d+)/);
-        if (a) ahead = parseInt(a[1], 10) || 0;
-        if (b) behind = parseInt(b[1], 10) || 0;
-      }
-      const mainline = isMainlineBranchName(name);
-      branches2.push({
-        name,
-        remote: !!isRemote,
-        current: name === current,
-        mainline,
-        tip_hash: hash,
-        tip_ts: parseInt(tsStr, 10) || 0,
-        tip_subject: subject,
-        upstream: upstream || null,
-        ahead,
-        behind,
-        unique_count: null
-        // filled in below for non-mainline
-      });
-    }
-    const mainlineRefs = await getExistingMainlineRefs(workspaceDir);
-    if (mainlineRefs.length > 0) {
-      const counts = await Promise.all(branches2.map(async (b) => {
-        if (b.mainline) return null;
-        const cr = await runVcs(workspaceDir, "git", ["rev-list", "--count", b.name, "--not", ...mainlineRefs]);
-        if (!cr.ok) return null;
-        return parseInt(cr.stdout.toString("utf-8").trim(), 10) || 0;
-      }));
-      for (let i = 0; i < branches2.length; i++) branches2[i].unique_count = counts[i];
-    }
-    const filtered = branches2.filter((b) => b.mainline || b.unique_count == null || b.unique_count > 0);
-    return sendFsResult(queryId, { ok: true, vcs: "git", branches: filtered, current });
-  }
-  const tpl = "{branch}\\x1f{rev}\\x1f{node}\\x1f{p1node}\\x1f{date|hgdate}\\x1f{desc|firstline}\\n";
-  const VCS_BRANCHES_LIMIT = String(VCS_BRANCHES_MAX);
-  const isUnknownCmd = (err) => /unknown command|no such command|unknown revset/i.test(err || "");
-  let r = await runVcs(workspaceDir, "hg", ["log", "-r", "reverse(head() and draft())", "--template", tpl, "--limit", VCS_BRANCHES_LIMIT]);
-  if (!r.ok && isUnknownCmd(r.error)) {
-    r = await runVcs(workspaceDir, "hg", ["log", "-r", "reverse(head() and not closed())", "--template", tpl, "--limit", VCS_BRANCHES_LIMIT]);
-  }
-  if (!r.ok && isUnknownCmd(r.error)) {
-    r = await runVcs(workspaceDir, "hg", ["branches", "--template", tpl]);
-  }
-  if (!r.ok) return sendFsResult(queryId, r);
-  const wdpR = await runVcs(workspaceDir, "hg", ["log", "-r", ".", "--template", "{node}\\n"]);
-  const workingDirParent = wdpR.ok ? wdpR.stdout.toString("utf-8").trim() || null : null;
-  const text = r.stdout.toString("utf-8");
-  const records = text.split("\n");
-  while (records.length && records[records.length - 1] === "") records.pop();
-  const branches = [];
-  const seenHashes = /* @__PURE__ */ new Set();
-  for (const rec of records) {
-    if (branches.length >= VCS_BRANCHES_MAX) break;
-    if (!rec) continue;
-    const parts = rec.split("");
-    if (parts.length < 6) continue;
-    const branchName = (parts[0] || "").trim();
-    const hash = (parts[2] || "").trim();
-    const parentHash = (parts[3] || "").trim();
-    const hgdate = parts[4] || "";
-    const subject = (parts[5] || "").trim();
-    if (!hash) continue;
-    if (seenHashes.has(hash)) continue;
-    seenHashes.add(hash);
-    const displayName = branchName && branchName !== "default" ? branchName : subject || hash.slice(0, 12);
-    const ts = parseInt((hgdate || "").split(" ")[0], 10) || 0;
-    branches.push({
-      // `name` is the user-facing display; the UI calls vcs.log with
-      // `tip_hash` as the branch identifier (see handleVcsLog), so the
-      // display can be arbitrary text without breaking the revset.
-      name: displayName,
-      remote: false,
-      // Draft heads aren't mainline by definition — they're per-stack
-      // tips. The working-dir parent's hash determines "current".
-      current: workingDirParent != null && hash === workingDirParent,
-      mainline: false,
-      tip_hash: hash,
-      // Surface the parent hash so a future iteration can render
-      // the actual stack/tree structure on the client side.
-      parent_hash: parentHash || null,
-      tip_ts: ts,
-      tip_subject: subject,
-      upstream: null,
-      ahead: 0,
-      behind: 0,
-      unique_count: null
-      // not computed for hg in v1
-    });
-  }
-  const curBranchR = await runVcs(workspaceDir, "hg", ["branch"]);
-  const currentBranchName = curBranchR.ok ? curBranchR.stdout.toString("utf-8").trim() || null : null;
-  return sendFsResult(queryId, { ok: true, vcs: "hg", branches, current: currentBranchName });
-}
-var VCS_LOG_DEFAULT_LIMIT = 50;
-var VCS_LOG_MAX_LIMIT = 500;
-async function handleVcsLog(queryId, params) {
-  let { workspaceDir } = params || {};
-  const opts = (params == null ? void 0 : params.opts) || {};
-  const detect = await vcsDetect(workspaceDir);
-  if (detect.repoRoot) workspaceDir = detect.repoRoot;
-  if (!detect.vcs) {
-    return sendFsResult(queryId, { ok: false, code: "not_a_repo", error: "not a repo" });
-  }
-  const branch = typeof opts.branch === "string" && opts.branch ? opts.branch : null;
-  const mode = opts.mode === "branch_full" ? "branch_full" : opts.mode === "mainline" ? "mainline" : "branch_unique";
-  const limit = Math.min(Math.max(parseInt(opts.limit, 10) || VCS_LOG_DEFAULT_LIMIT, 1), VCS_LOG_MAX_LIMIT);
-  const skip = Math.max(parseInt(opts.skip, 10) || 0, 0);
-  const rawSearch = typeof opts.search === "string" ? opts.search.trim() : "";
-  const search = rawSearch.length > 0 && rawSearch.length <= 200 ? rawSearch : null;
-  if (detect.vcs === "git") {
-    const args2 = [
-      "log",
-      "-z",
-      `--max-count=${limit}`,
-      `--skip=${skip}`,
-      // %(trailers:...) pulls trailer-line values out of the commit
-      // body; valueonly + key= scopes to the Frontier tagging trailer
-      // workers add per structured_start.md instructions. Multiple
-      // trailers on one commit are newline-separated in the value.
-      "--pretty=format:%H%x1f%h%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%D%x1f%(trailers:key=Frontier-Space-UUID,valueonly,separator=%x20)"
-    ];
-    if (search) {
-      args2.push("--fixed-strings", "-i", `--grep=${search}`);
-    }
-    let resolvedBranch = branch;
-    if (mode === "mainline") {
-      const mainlineRefs = await getExistingMainlineRefs(workspaceDir);
-      resolvedBranch = mainlineRefs[0] || branch || "HEAD";
-    }
-    if (resolvedBranch) {
-      args2.push(resolvedBranch);
-      if (mode === "branch_unique" && !isMainlineBranchName(resolvedBranch)) {
-        const mainlineRefs = await getExistingMainlineRefs(workspaceDir);
-        if (mainlineRefs.length > 0) args2.push("--not", ...mainlineRefs);
-      }
-    }
-    const r2 = await runVcs(workspaceDir, "git", args2);
-    if (!r2.ok) return sendFsResult(queryId, r2);
-    const text2 = r2.stdout.toString("utf-8");
-    const records2 = text2.split("\0");
-    if (records2[records2.length - 1] === "") records2.pop();
-    const commits2 = [];
-    for (const rec of records2) {
-      if (!rec) continue;
-      const parts = rec.split("");
-      if (parts.length < 8) continue;
-      const [hash, shortHash, parentsStr, an, ae, atStr, subject, refsStr, trailerStr] = parts;
-      const spaceUid = trailerStr ? trailerStr.split(/\s+/).find((s) => s.trim()) || null : null;
-      commits2.push({
-        hash,
-        short_hash: shortHash,
-        parents: parentsStr ? parentsStr.split(" ").filter(Boolean) : [],
-        author_name: an,
-        author_email: ae,
-        author_ts: parseInt(atStr, 10) || 0,
-        subject,
-        refs: refsStr ? refsStr.split(",").map((s) => s.trim()).filter(Boolean) : [],
-        space_uid: spaceUid
-      });
-    }
-    return sendFsResult(queryId, {
-      ok: true,
-      vcs: "git",
-      commits: commits2,
-      has_more: commits2.length === limit,
-      branch: branch || null,
-      mode
-    });
-  }
-  const tplFields = "{node}\\x1f{node|short}\\x1f{p1node} {p2node}\\x1f{author|person}\\x1f{author|email}\\x1f{date|hgdate}\\x1f{desc|firstline}\\x1f{bookmarks} {tags}\\x1f{desc|nonempty}\\x00";
-  const args = ["log", "--template", tplFields];
-  if (mode === "mainline") {
-    let chosen = "default";
-    for (const cand of ["default", "main", "master"]) {
-      const probe = await runVcs(workspaceDir, "hg", ["log", "-b", cand, "-l", "1", "--template", "{node}"]);
-      if (probe.ok && probe.stdout.toString("utf-8").trim()) {
-        chosen = cand;
-        break;
-      }
-    }
-    args.push("-b", chosen);
-  } else if (branch) {
-    if (mode === "branch_unique") {
-      const safe = branch.replace(/'/g, "''");
-      args.push("-r", `reverse(ancestors('${safe}') and draft())`);
-    } else {
-      args.push("-b", branch);
-    }
-  }
-  if (search) {
-    const safeSearch = search.replace(/'/g, "''");
-    args.push("-r", `keyword('${safeSearch}')`);
-  }
-  const fetchLimit = branch && mode === "branch_unique" ? 200 : limit + skip;
-  args.push("-l", String(fetchLimit));
-  const r = await runVcs(workspaceDir, "hg", args);
-  if (!r.ok) return sendFsResult(queryId, r);
-  const text = r.stdout.toString("utf-8");
-  const records = text.split("\0");
-  if (records[records.length - 1] === "") records.pop();
-  const commits = [];
-  const trailerRe = /^Frontier-Space-UUID:\s*([0-9a-fA-F-]+)\s*$/m;
-  for (const rec of records.slice(skip)) {
-    if (!rec) continue;
-    const parts = rec.split("");
-    if (parts.length < 8) continue;
-    const [hash, shortHash, parentsStr, an, ae, hgdate, subject, refsStr, fullDesc] = parts;
-    const parents = parentsStr.split(" ").filter((p) => p && !/^0+$/.test(p));
-    const m = fullDesc ? trailerRe.exec(fullDesc) : null;
-    commits.push({
-      hash,
-      short_hash: shortHash,
-      parents,
-      author_name: an,
-      author_email: ae,
-      author_ts: parseInt((hgdate || "").split(" ")[0], 10) || 0,
-      subject,
-      refs: refsStr ? refsStr.split(/\s+/).filter(Boolean) : [],
-      space_uid: m ? m[1] : null
-    });
-  }
-  return sendFsResult(queryId, {
-    ok: true,
-    vcs: "hg",
-    commits,
-    has_more: commits.length === limit,
-    branch: branch || null,
-    mode
-  });
-}
-async function handleVcsCommit(queryId, params) {
-  let { workspaceDir } = params || {};
-  const rev = typeof (params == null ? void 0 : params.rev) === "string" ? params.rev : "";
-  if (!rev) {
-    return sendFsResult(queryId, { ok: false, code: "vcs_error", error: "rev is required" });
-  }
-  const detect = await vcsDetect(workspaceDir);
-  if (detect.repoRoot) workspaceDir = detect.repoRoot;
-  if (!detect.vcs) {
-    return sendFsResult(queryId, { ok: false, code: "not_a_repo", error: "not a repo" });
-  }
-  if (detect.vcs === "git") {
-    const fmt = "%H%x1f%h%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%b%x00";
-    const r = await runVcs(workspaceDir, "git", ["show", `--pretty=format:${fmt}`, "--name-status", "-z", rev]);
-    if (!r.ok) return sendFsResult(queryId, r);
-    const text = r.stdout.toString("utf-8");
-    const split = text.split("\0");
-    const headerRec = split.shift() || "";
-    const headerParts2 = headerRec.split("");
-    if (headerParts2.length < 8) {
-      return sendFsResult(queryId, { ok: false, code: "vcs_error", error: "unexpected git show output" });
-    }
-    const [hash2, shortHash2, parentsStr2, an2, ae2, atStr, subject2, body2] = headerParts2;
-    while (split.length && split[0] === "") split.shift();
-    const files2 = [];
-    while (split.length) {
-      let code = split.shift();
-      if (code === "" || code === void 0) continue;
-      code = code.replace(/^\s+/, "");
-      if (!code) continue;
-      const letter = code[0];
-      if (letter === "R" || letter === "C") {
-        const from = split.shift() || "";
-        const to = split.shift() || "";
-        files2.push({ path: to, status: letter, rename_from: from });
-      } else {
-        const p = split.shift() || "";
-        if (!p) continue;
-        files2.push({ path: p, status: letter });
-      }
-    }
-    return sendFsResult(queryId, {
-      ok: true,
-      vcs: "git",
-      hash: hash2,
-      short_hash: shortHash2,
-      parents: parentsStr2 ? parentsStr2.split(" ").filter(Boolean) : [],
-      author_name: an2,
-      author_email: ae2,
-      author_ts: parseInt(atStr, 10) || 0,
-      subject: subject2,
-      body: body2 || "",
-      files: files2
-    });
-  }
-  const tpl = "{node}\\x1f{node|short}\\x1f{p1node} {p2node}\\x1f{author|person}\\x1f{author|email}\\x1f{date|hgdate}\\x1f{desc}\\x00";
-  const headerR = await runVcs(workspaceDir, "hg", ["log", "-r", rev, "--template", tpl]);
-  if (!headerR.ok) return sendFsResult(queryId, headerR);
-  const headerParts = headerR.stdout.toString("utf-8").replace(/\0$/, "").split("");
-  if (headerParts.length < 7) {
-    return sendFsResult(queryId, { ok: false, code: "vcs_error", error: "unexpected hg log output" });
-  }
-  const [hash, shortHash, parentsStr, an, ae, hgdate, fullDesc] = headerParts;
-  const firstNewline = (fullDesc || "").indexOf("\n");
-  const subject = firstNewline === -1 ? fullDesc || "" : fullDesc.slice(0, firstNewline);
-  const body = firstNewline === -1 ? "" : fullDesc.slice(firstNewline + 1);
-  const parents = parentsStr.split(" ").filter((p) => p && !/^0+$/.test(p));
-  const filesR = await runVcs(workspaceDir, "hg", ["status", "--change", rev]);
-  const files = [];
-  if (filesR.ok) {
-    for (const line of filesR.stdout.toString("utf-8").split("\n")) {
-      if (!line) continue;
-      const letter = line[0];
-      const p = line.slice(2);
-      files.push({ path: p, status: letter === "R" ? "D" : letter });
-    }
-  }
-  return sendFsResult(queryId, {
-    ok: true,
-    vcs: "hg",
-    hash,
-    short_hash: shortHash,
-    parents,
-    author_name: an,
-    author_email: ae,
-    author_ts: parseInt((hgdate || "").split(" ")[0], 10) || 0,
-    subject,
-    body: body || "",
-    files
-  });
-}
-var VCS_DIFF_SIDE_MAX_BYTES = 1048576;
-var VCS_DIFF_UNIFIED_MAX_BYTES = 2 * 1048576;
-var VCS_DIFF_BINARY_PROBE = 8192;
-function isLikelyBinary(buf) {
-  if (!buf || !buf.length) return false;
-  const slice = buf.subarray(0, Math.min(buf.length, VCS_DIFF_BINARY_PROBE));
-  for (let i = 0; i < slice.length; i++) if (slice[i] === 0) return true;
-  return false;
-}
-async function handleVcsDiff(queryId, params) {
-  var _a;
-  let { workspaceDir } = params || {};
-  const rev = typeof (params == null ? void 0 : params.rev) === "string" ? params.rev : "";
-  const file = typeof (params == null ? void 0 : params.file) === "string" ? params.file : "";
-  const mode = ((_a = params == null ? void 0 : params.opts) == null ? void 0 : _a.mode) === "worktree_vs_head" ? "worktree_vs_head" : "commit";
-  if (!file) {
-    return sendFsResult(queryId, { ok: false, code: "vcs_error", error: "file is required" });
-  }
-  if (mode === "commit" && !rev) {
-    return sendFsResult(queryId, { ok: false, code: "vcs_error", error: "rev is required for commit-mode diff" });
-  }
-  const detect = await vcsDetect(workspaceDir);
-  if (detect.repoRoot) workspaceDir = detect.repoRoot;
-  if (!detect.vcs) {
-    return sendFsResult(queryId, { ok: false, code: "not_a_repo", error: "not a repo" });
-  }
-  if (mode === "worktree_vs_head") {
-    const absPath = path.join(workspaceDir, file);
-    let afterBuf2 = Buffer.alloc(0);
-    try {
-      afterBuf2 = await fsp.readFile(absPath);
-    } catch (err) {
-      if (err && err.code !== "ENOENT") {
-        return sendFsResult(queryId, { ok: false, code: "vcs_error", error: String(err.message || err) });
-      }
-    }
-    let beforeBuf2 = Buffer.alloc(0);
-    if (detect.vcs === "git") {
-      const r = await runVcs(workspaceDir, "git", ["show", `HEAD:${file}`], { maxBuffer: VCS_DIFF_SIDE_MAX_BYTES * 2 });
-      if (r.ok) beforeBuf2 = Buffer.from(r.stdout);
-    } else {
-      const r = await runVcs(workspaceDir, "hg", ["cat", "-r", ".", file], { maxBuffer: VCS_DIFF_SIDE_MAX_BYTES * 2 });
-      if (r.ok) beforeBuf2 = Buffer.from(r.stdout);
-    }
-    if (isLikelyBinary(beforeBuf2) || isLikelyBinary(afterBuf2)) {
-      return sendFsResult(queryId, { ok: false, code: "binary", error: "binary file" });
-    }
-    if (beforeBuf2.length > VCS_DIFF_SIDE_MAX_BYTES || afterBuf2.length > VCS_DIFF_SIDE_MAX_BYTES) {
-      return sendFsResult(queryId, { ok: false, code: "too_large", error: "file exceeds 1 MB cap on one or both sides" });
-    }
-    const unifiedArgs = detect.vcs === "git" ? ["diff", "HEAD", "--", file] : ["diff", file];
-    const unifiedR2 = await runVcs(workspaceDir, detect.vcs, unifiedArgs, { maxBuffer: VCS_DIFF_UNIFIED_MAX_BYTES });
-    const unified2 = unifiedR2.ok ? unifiedR2.stdout.toString("utf-8").slice(0, VCS_DIFF_UNIFIED_MAX_BYTES) : "";
-    return sendFsResult(queryId, {
-      ok: true,
-      vcs: detect.vcs,
-      file,
-      sides: {
-        before: beforeBuf2.toString("utf-8"),
-        after: afterBuf2.toString("utf-8"),
-        before_bytes: beforeBuf2.length,
-        after_bytes: afterBuf2.length
-      },
-      unified: unified2
-    });
-  }
-  if (detect.vcs === "git") {
-    const showAt = async (spec) => {
-      const r = await runVcs(workspaceDir, "git", ["show", spec], { maxBuffer: VCS_DIFF_SIDE_MAX_BYTES * 2 });
-      return r;
-    };
-    const afterR2 = await showAt(`${rev}:${file}`);
-    if (!afterR2.ok) return sendFsResult(queryId, afterR2);
-    const beforeR2 = await showAt(`${rev}^:${file}`);
-    const beforeBuf2 = beforeR2.ok ? Buffer.from(beforeR2.stdout) : Buffer.alloc(0);
-    const afterBuf2 = Buffer.from(afterR2.stdout);
-    if (isLikelyBinary(beforeBuf2) || isLikelyBinary(afterBuf2)) {
-      return sendFsResult(queryId, { ok: false, code: "binary", error: "binary file" });
-    }
-    const truncated = beforeBuf2.length > VCS_DIFF_SIDE_MAX_BYTES || afterBuf2.length > VCS_DIFF_SIDE_MAX_BYTES;
-    if (truncated) {
-      return sendFsResult(queryId, { ok: false, code: "too_large", error: "file exceeds 1 MB cap on one or both sides" });
-    }
-    const unifiedR2 = await runVcs(workspaceDir, "git", ["diff", `${rev}^!`, "--", file], { maxBuffer: VCS_DIFF_UNIFIED_MAX_BYTES });
-    const unified2 = unifiedR2.ok ? unifiedR2.stdout.toString("utf-8").slice(0, VCS_DIFF_UNIFIED_MAX_BYTES) : "";
-    return sendFsResult(queryId, {
-      ok: true,
-      vcs: "git",
-      file,
-      sides: {
-        before: beforeBuf2.toString("utf-8"),
-        after: afterBuf2.toString("utf-8"),
-        before_bytes: beforeBuf2.length,
-        after_bytes: afterBuf2.length
-      },
-      unified: unified2
-    });
-  }
-  const afterR = await runVcs(workspaceDir, "hg", ["cat", "-r", rev, file], { maxBuffer: VCS_DIFF_SIDE_MAX_BYTES * 2 });
-  if (!afterR.ok) return sendFsResult(queryId, afterR);
-  const beforeR = await runVcs(workspaceDir, "hg", ["cat", "-r", `${rev}^`, file], { maxBuffer: VCS_DIFF_SIDE_MAX_BYTES * 2 });
-  const beforeBuf = beforeR.ok ? Buffer.from(beforeR.stdout) : Buffer.alloc(0);
-  const afterBuf = Buffer.from(afterR.stdout);
-  if (isLikelyBinary(beforeBuf) || isLikelyBinary(afterBuf)) {
-    return sendFsResult(queryId, { ok: false, code: "binary", error: "binary file" });
-  }
-  if (beforeBuf.length > VCS_DIFF_SIDE_MAX_BYTES || afterBuf.length > VCS_DIFF_SIDE_MAX_BYTES) {
-    return sendFsResult(queryId, { ok: false, code: "too_large", error: "file exceeds 1 MB cap" });
-  }
-  const unifiedR = await runVcs(workspaceDir, "hg", ["diff", "-c", rev, file], { maxBuffer: VCS_DIFF_UNIFIED_MAX_BYTES });
-  const unified = unifiedR.ok ? unifiedR.stdout.toString("utf-8").slice(0, VCS_DIFF_UNIFIED_MAX_BYTES) : "";
-  return sendFsResult(queryId, {
-    ok: true,
-    vcs: "hg",
-    file,
-    sides: {
-      before: beforeBuf.toString("utf-8"),
-      after: afterBuf.toString("utf-8"),
-      before_bytes: beforeBuf.length,
-      after_bytes: afterBuf.length
-    },
-    unified
-  });
-}
-async function handleVcsOp(op, queryId, params) {
-  if (op === "vcs.status") return handleVcsStatus(queryId, params);
-  if (op === "vcs.branches") return handleVcsBranches(queryId, params);
-  if (op === "vcs.log") return handleVcsLog(queryId, params);
-  if (op === "vcs.commit") return handleVcsCommit(queryId, params);
-  if (op === "vcs.diff") return handleVcsDiff(queryId, params);
-  sendFsResult(queryId, { ok: false, code: "unknown_op", error: `unknown vcs op: ${op}` });
 }
 async function validateWorkspace(workspaceDir) {
   if (!workspaceDir) return { ok: true, cwd: os.homedir() };
@@ -5958,7 +5443,9 @@ async function runWorkerSession(args, msg) {
     executionId: msg.executionId,
     role: args.role || msg.role || "",
     emit,
-    signal: args.abortController ? args.abortController.signal : void 0
+    // Runtimes read input.signal unconditionally (e.g. claude-code's
+    // input.signal.aborted); hand them a valid AbortSignal that never fires.
+    signal: NEVER_ABORT_SIGNAL
   };
   try {
     const res = await runtime.run(input);
@@ -6007,8 +5494,7 @@ async function runExecute(msg) {
 async function handleHandshake(msg) {
   const ws_check = await validateWorkspace(msg.workspaceDir);
   if (!ws_check.ok) return { outcome: "error", error: ws_check.error };
-  const ac = new AbortController();
-  trackInflight(msg.executionId, ac, inflightMetaFromMsg(msg));
+  trackInflight(msg.executionId, inflightMetaFromMsg(msg));
   const { sessionId, error } = await runWorkerSession({
     systemPrompt: msg.systemPrompt,
     userPrompt: msg.userPrompt,
@@ -6016,7 +5502,6 @@ async function handleHandshake(msg) {
     cwd: ws_check.cwd,
     executionId: msg.executionId,
     role: "handshake",
-    abortController: ac,
     mcpServers: msg.mcpServers
   }, msg);
   return error ? { outcome: "error", sessionId, error } : { outcome: "success", sessionId };
@@ -6024,8 +5509,7 @@ async function handleHandshake(msg) {
 async function handleInit(msg) {
   const ws_check = await validateWorkspace(msg.workspaceDir);
   if (!ws_check.ok) return { outcome: "error", error: ws_check.error };
-  const ac = new AbortController();
-  trackInflight(msg.executionId, ac, inflightMetaFromMsg(msg));
+  trackInflight(msg.executionId, inflightMetaFromMsg(msg));
   const { sessionId, error } = await runWorkerSession({
     systemPrompt: msg.systemPrompt,
     userPrompt: msg.userPrompt || "ready",
@@ -6033,7 +5517,6 @@ async function handleInit(msg) {
     cwd: ws_check.cwd,
     executionId: msg.executionId,
     role: "init",
-    abortController: ac,
     mcpServers: msg.mcpServers
   }, msg);
   return error ? { outcome: "error", sessionId, error } : { outcome: "success", sessionId };
@@ -6045,8 +5528,7 @@ async function handleExtensionTurn(msg) {
   const persistDir = path.join("/tmp", "frontier", persistKey);
   await fsp.mkdir(persistDir, { recursive: true });
   const persistPath = path.join(persistDir, "_persist.json");
-  const ac = new AbortController();
-  trackInflight(msg.executionId, ac, inflightMetaFromMsg(msg));
+  trackInflight(msg.executionId, inflightMetaFromMsg(msg));
   const { sessionId, error, responseText, usage } = await runWorkerSession({
     systemPrompt: msg.systemPrompt,
     userPrompt: msg.userPrompt,
@@ -6054,7 +5536,6 @@ async function handleExtensionTurn(msg) {
     cwd: ws_check.cwd,
     executionId: msg.executionId,
     role: "extension",
-    abortController: ac,
     extraEnv: { FRONTIER_PERSIST_DIR: persistDir }
   }, msg);
   let persistPayload = null;
@@ -6075,8 +5556,7 @@ async function handleChildReportTurn(msg) {
   const persistDir = path.join("/tmp", "frontier", msg.executionId);
   await fsp.mkdir(persistDir, { recursive: true });
   const persistPath = path.join(persistDir, "_persist.json");
-  const ac = new AbortController();
-  trackInflight(msg.executionId, ac, inflightMetaFromMsg(msg));
+  trackInflight(msg.executionId, inflightMetaFromMsg(msg));
   const { sessionId, error, usage } = await runWorkerSession({
     systemPrompt: msg.systemPrompt,
     userPrompt: msg.userPrompt,
@@ -6084,7 +5564,6 @@ async function handleChildReportTurn(msg) {
     cwd: ws_check.cwd,
     executionId: msg.executionId,
     role: "child_report",
-    abortController: ac,
     extraEnv: { FRONTIER_PERSIST_DIR: persistDir }
   }, msg);
   let persistPayload = null;
@@ -6262,6 +5741,7 @@ async function bootstrap() {
     process.exit(1);
   }
   claimPidLock();
+  await ensureNodePty();
   connect();
 }
 bootstrap().catch((err) => {

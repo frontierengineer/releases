@@ -1,11 +1,11 @@
 {
   "channel": "stable",
-  "version": "0.1.0",
-  "gitSha": "344881142df2",
-  "imageDigest": "sha256:f24a7cbe2772fccf5eddd8a6b39027bb3f648b9e24b8ffe7d5f94a253852c9b5",
-  "image": "ghcr.io/frontierengineer/frontier@sha256:f24a7cbe2772fccf5eddd8a6b39027bb3f648b9e24b8ffe7d5f94a253852c9b5",
-  "releasedAt": "2026-06-25T21:50:26Z",
-  "notesUrl": "https://frontierengineer.github.io/releases/notes/0.1.0.md",
+  "version": "0.1.1",
+  "gitSha": "68966645503d",
+  "imageDigest": "sha256:5048acf1e7bfba7cc687ac48c6c40f4e8a19f330c7480ada4183d7cab8235403",
+  "image": "ghcr.io/frontierengineer/frontier@sha256:5048acf1e7bfba7cc687ac48c6c40f4e8a19f330c7480ada4183d7cab8235403",
+  "releasedAt": "2026-06-25T23:30:55Z",
+  "notesUrl": "https://frontierengineer.github.io/releases/notes/0.1.1.md",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

@@ -1,0 +1,11 @@
+{
+  "channel": "rc",
+  "version": "0.1.1-rc.20260625",
+  "gitSha": "1b7dbe8a8e4c",
+  "imageDigest": "sha256:e40c4219727156ab92fc57f3b30d7defe2927df24ecfae627af673ce6045ef02",
+  "image": "ghcr.io/frontierengineer/frontier@sha256:e40c4219727156ab92fc57f3b30d7defe2927df24ecfae627af673ce6045ef02",
+  "releasedAt": "2026-06-25T22:53:08Z",
+  "notesUrl": "https://frontierengineer.github.io/releases/notes/0.1.1-rc.20260625.md",
+  "minSupportedVersion": "0.0.0",
+  "critical": false
+}

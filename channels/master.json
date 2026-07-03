@@ -1,10 +1,10 @@
 {
   "channel": "master",
-  "version": "26.07.03.0134",
-  "gitSha": "8722bf9e7ac0",
+  "version": "26.07.03.0148",
+  "gitSha": "50dbac46f1c4",
   "imageDigest": "",
   "image": "",
-  "releasedAt": "2026-07-03T01:36:50Z",
+  "releasedAt": "2026-07-03T01:50:47Z",
   "notesUrl": "",
   "minSupportedVersion": "0.0.0",
   "critical": false

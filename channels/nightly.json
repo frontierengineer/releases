@@ -1,11 +1,14 @@
 {
   "channel": "nightly",
-  "version": "0.1.2-nightly.20260702",
-  "gitSha": "7b934b6d56f6",
+  "version": "26.07.03.0",
+  "gitSha": "6f6171efb073",
   "imageDigest": "",
   "image": "",
-  "releasedAt": "2026-07-02T09:53:17Z",
-  "notesUrl": "https://frontierengineer.github.io/releases/notes/0.1.2-nightly.20260702.md",
+  "bundleSha256": "",
+  "bundleSize": 0,
+  "bundleUrl": "",
+  "releasedAt": "2026-07-03T09:51:38Z",
+  "notesUrl": "https://frontierengineer.github.io/releases/notes/26.07.03.0.md",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

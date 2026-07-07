@@ -6,7 +6,7 @@
   "image": "",
   "bundleSha256": "10b6b2025db8cdcffbfffc51d1a7aafca28166049e9cdaf985da5e4afb6a9eb5",
   "bundleSize": 122115128,
-  "bundleUrl": "https://github.com/frontierengineer/dev-releases/releases/download/host-nightly/server-nightly.tar.gz",
+  "bundleUrl": "http://bundle-store.frontier.svc.cluster.local/host-nightly/server-nightly.tar.gz",
   "releasedAt": "2026-07-05T09:36:21Z",
   "notesUrl": "https://frontierengineer.github.io/releases/notes/26.07.05.0.md",
   "minSupportedVersion": "0.0.0",

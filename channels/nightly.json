@@ -1,14 +1,13 @@
 {
   "channel": "nightly",
   "version": "26.07.10.0",
-  "gitSha": "9ee1eb4fb334",
+  "gitSha": "08555c2c9880",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "13bc57179ba546044ad7f90ec37859ef2e87a2eb5a150290ccf72b0f8751de6b",
-  "bundleSize": 122537376,
-  "bundleUrl": "http://bundle-store.frontier.svc.cluster.local/host-nightly/server-nightly.tar.gz",
-  "releasedAt": "2026-07-10T03:39:08Z",
-  "notesUrl": "https://frontierengineer.github.io/releases/notes/26.07.10.0.md",
+  "bundleSha256": "",
+  "bundleSize": 0,
+  "bundleUrl": "",
+  "releasedAt": "2026-07-10T10:17:52Z",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

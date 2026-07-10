@@ -1,13 +1,13 @@
 {
   "channel": "master",
-  "version": "26.07.10.0002",
-  "gitSha": "767f330a137f",
+  "version": "26.07.10.0004",
+  "gitSha": "9e87dce58549",
   "imageDigest": "",
   "image": "",
   "bundleSha256": "",
   "bundleSize": 0,
   "bundleUrl": "",
-  "releasedAt": "2026-07-10T00:02:43Z",
+  "releasedAt": "2026-07-10T00:04:09Z",
   "notesUrl": "",
   "minSupportedVersion": "0.0.0",
   "critical": false

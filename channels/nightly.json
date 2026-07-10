@@ -1,14 +1,14 @@
 {
   "channel": "nightly",
-  "version": "26.07.09.0",
-  "gitSha": "ab5060616fac",
+  "version": "26.07.10.0",
+  "gitSha": "9ee1eb4fb334",
   "imageDigest": "",
   "image": "",
   "bundleSha256": "",
   "bundleSize": 0,
   "bundleUrl": "",
-  "releasedAt": "2026-07-09T10:19:26Z",
-  "notesUrl": "https://frontierengineer.github.io/releases/notes/26.07.09.0.md",
+  "releasedAt": "2026-07-10T03:39:08Z",
+  "notesUrl": "https://frontierengineer.github.io/releases/notes/26.07.10.0.md",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

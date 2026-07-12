@@ -4,7 +4,7 @@
   "gitSha": "b39ebbb82bb3",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "cb065449a4e889d0be7878eabbb4baadfbac3bae44b3240467dbb8805c4f87c5",
+  "bundleSha256": "f74177cd9a556fc6894946c905f139e1e45c11e37c240570c5d4633018267206",
   "bundleSize": 122624970,
   "bundleUrl": "http://bundle-store.frontier.svc.cluster.local/host-nightly/server-nightly.tar.gz",
   "releasedAt": "2026-07-11T08:43:02Z",

@@ -1,13 +1,13 @@
 {
   "channel": "master",
-  "version": "26.07.14.1650",
-  "gitSha": "d99187783a38",
+  "version": "26.07.14.1832",
+  "gitSha": "9027e61fba8e",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "498345c7136ef9d2a7c99ec78348507993bb352872a290ac4419ac9868186633",
-  "bundleSize": 122627523,
-  "bundleUrl": "http://bundle-store.frontier.svc.cluster.local/host-master/server-master.tar.gz",
-  "releasedAt": "2026-07-14T16:50:02Z",
+  "bundleSha256": "",
+  "bundleSize": 0,
+  "bundleUrl": "",
+  "releasedAt": "2026-07-14T18:32:14Z",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

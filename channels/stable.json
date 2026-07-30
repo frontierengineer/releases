@@ -1,11 +1,13 @@
 {
   "channel": "stable",
-  "version": "0.1.2",
-  "gitSha": "3a61fb2eac0a",
+  "version": "26.7.0",
+  "gitSha": "4b131763c9ee",
   "imageDigest": "",
   "image": "",
-  "releasedAt": "2026-06-27T02:40:22Z",
-  "notesUrl": "https://frontierengineer.github.io/releases/notes/0.1.2.md",
+  "bundleSha256": "",
+  "bundleSize": 0,
+  "bundleUrl": "",
+  "releasedAt": "2026-07-30T23:47:48Z",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

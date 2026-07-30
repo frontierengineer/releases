@@ -4,9 +4,9 @@
   "gitSha": "fe9ab933f68d",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "",
-  "bundleSize": 0,
-  "bundleUrl": "",
+  "bundleSha256": "dc18bde571ce9b28e2a99eaa69db47ef1465ba3c4c4df0b82a078c6e32262229",
+  "bundleSize": 121830656,
+  "bundleUrl": "http://bundle-store.frontier.svc.cluster.local/host-master/server-master.tar.gz",
   "releasedAt": "2026-07-30T16:21:50Z",
   "minSupportedVersion": "0.0.0",
   "critical": false

@@ -1,13 +1,13 @@
 {
   "channel": "stable",
-  "version": "26.8.0",
-  "gitSha": "068abe599971",
+  "version": "26.8.1",
+  "gitSha": "41a164212b5a",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "84cbc2a405eabe02fd1218348089a2950646f6221248b23d2468038ade155692",
-  "bundleSize": 118074588,
-  "bundleUrl": "https://github.com/frontierengineer/releases/releases/download/host-stable/server-stable.tar.gz",
-  "releasedAt": "2026-08-01T01:04:04Z",
+  "bundleSha256": "",
+  "bundleSize": 0,
+  "bundleUrl": "",
+  "releasedAt": "2026-08-04T04:12:18Z",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

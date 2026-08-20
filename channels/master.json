@@ -1,13 +1,13 @@
 {
   "channel": "master",
-  "version": "26.08.20.1917",
-  "gitSha": "47747cd40791",
+  "version": "26.08.20.1929",
+  "gitSha": "0f81d02b9c43",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "d749cd8c76747a2c4b09f172b0b07b6d1795ae2329ffcd01353564eee157d4ab",
-  "bundleSize": 6818188,
-  "bundleUrl": "https://github.com/frontierengineer/releases/releases/download/host-master/server-master.tar.gz",
-  "releasedAt": "2026-08-20T19:24:37Z",
+  "bundleSha256": "",
+  "bundleSize": 0,
+  "bundleUrl": "",
+  "releasedAt": "2026-08-20T19:36:27Z",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

@@ -1,13 +1,13 @@
 {
   "channel": "rc",
-  "version": "26.9.2",
-  "gitSha": "2e9dc8f9b",
+  "version": "26.9.3",
+  "gitSha": "46b911cad",
   "imageDigest": "",
   "image": "",
   "bundleSha256": "",
   "bundleSize": 0,
   "bundleUrl": "",
-  "releasedAt": "2026-09-15T05:13:26Z",
+  "releasedAt": "2026-09-15T05:27:25Z",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

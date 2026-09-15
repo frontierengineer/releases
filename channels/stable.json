@@ -4,9 +4,9 @@
   "gitSha": "a336fa28f",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "",
-  "bundleSize": 0,
-  "bundleUrl": "",
+  "bundleSha256": "b80cc76a3d6c937460591b5c4c74e8f2d562821360f9a44c07390f770d4d80b9",
+  "bundleSize": 6842295,
+  "bundleUrl": "https://github.com/frontierengineer/releases/releases/download/host-stable/server-stable.tar.gz",
   "releasedAt": "2026-09-15T10:39:24Z",
   "minSupportedVersion": "0.0.0",
   "critical": false

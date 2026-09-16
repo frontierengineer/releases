@@ -4,9 +4,9 @@
   "gitSha": "7e650e678669",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "",
-  "bundleSize": 0,
-  "bundleUrl": "",
+  "bundleSha256": "1fa83ade3f55b17bb9f3bd74e9bb32470e919972653e232ae3c9cd1b33b04f28",
+  "bundleSize": 6841774,
+  "bundleUrl": "https://github.com/frontierengineer/releases/releases/download/host-master/server-master.tar.gz",
   "releasedAt": "2026-09-16T03:32:18Z",
   "minSupportedVersion": "0.0.0",
   "critical": false

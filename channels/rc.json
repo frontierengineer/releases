@@ -1,13 +1,13 @@
 {
   "channel": "rc",
-  "version": "26.9.12",
-  "gitSha": "671bad0d7a82",
+  "version": "26.9.13",
+  "gitSha": "70ee92e84114",
   "imageDigest": "",
   "image": "",
-  "bundleSha256": "a9c1c3459c3020b44d9270d8c88a4890862785093e5dfa6f267088e576d355f4",
-  "bundleSize": 6841476,
-  "bundleUrl": "https://github.com/frontierengineer/releases/releases/download/host-rc/server-rc.tar.gz",
-  "releasedAt": "2026-09-16T02:42:13Z",
+  "bundleSha256": "",
+  "bundleSize": 0,
+  "bundleUrl": "",
+  "releasedAt": "2026-09-17T10:37:50Z",
   "minSupportedVersion": "0.0.0",
   "critical": false
 }

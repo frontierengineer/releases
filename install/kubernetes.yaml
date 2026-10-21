@@ -1,0 +1,75 @@
+# Frontier — minimal Kubernetes install (a starting point, not a prescription).
+#
+#   kubectl apply -f https://frontierengineer.github.io/releases/install/kubernetes.yaml
+#   kubectl port-forward -n frontier svc/frontier 34567:80
+#
+# Adapt storage (PVC size / storageClass), expose the Service however your
+# cluster does ingress, and mount the code you want Frontier to work on into
+# the pod. Updates: roll the deployment to the sha published in your
+# channel's manifest (https://frontierengineer.github.io/releases/channels/).
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: frontier
+---
+# One claim holds everything that must survive a restart: Frontier's data and
+# the agent's home (logins, caches) both live under /frontier.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: frontier
+  namespace: frontier
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 15Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontier
+  namespace: frontier
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+    - port: 27520
+      targetPort: 27520
+      name: worker
+  selector:
+    app: frontier
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontier
+  namespace: frontier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontier
+  template:
+    metadata:
+      labels:
+        app: frontier
+    spec:
+      containers:
+        - name: frontier
+          image: ghcr.io/frontierengineer/frontier:stable
+          ports:
+            - containerPort: 80
+            - containerPort: 27520
+          env:
+            - name: FRONTIER_CHANNEL
+              value: stable
+          volumeMounts:
+            - name: frontier
+              mountPath: /frontier
+      volumes:
+        - name: frontier
+          persistentVolumeClaim:
+            claimName: frontier
